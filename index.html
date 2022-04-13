@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script async src="js/opencv.js"></script>
+</head>
+<body>
+    <img id="img">
+    <input type="file" id ="file">
+    <br><br><br>
+    <canvas id = 'output'></canvas>
+    <canvas id = 'output1'></canvas>
+    <canvas id = 'output2'></canvas>
+    <canvas id = 'output3'></canvas>
+    <canvas id = 'output4'></canvas>
+</body>
+<script>
+    let img = document.getElementById("img");
+    let file = document.getElementById("file");
+    file.addEventListener('change',(e) => {
+        img.src = URL.createObjectURL(e.target.files[0])
+    },false);
+    img.onload = function() {
+        // crop
+        crop(img, 150, 200, 500, 300, 60,60, 500, 300);
+        //rotate
+        rotate(img,90);
+        //detect line:
+        detect_images(img);
+
+
+    }
+
+// crop function
+function crop(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
+    const canvas = document.getElementById('output');
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+}
+
+//rotate function
+function rotate (image, angle) {
+    let src = cv.imread(image);
+    let dst = new cv.Mat();
+    let dsize = new cv.Size(src.rows, src.cols);
+    let center = new cv.Point(src.cols / 2, src.rows / 2);
+    let M = cv.getRotationMatrix2D(center, angle, 1);
+    cv.warpAffine(src, dst, M, dsize, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+    cv.imshow('output1', dst);
+    src.delete(); dst.delete(); M.delete();
+
+}
+
+//detect edges function
+function detect_images(image){
+    let src = cv.imread(image);
+    let dst = cv.Mat.zeros(src.rows, src.cols, cv.CV_8UC3);
+    let lines = new cv.Mat();
+    let color = new cv.Scalar(255, 0, 0);
+    cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+    cv.Canny(src, src, 50, 200, 3);
+// You can try more different parameters
+cv.HoughLinesP(src, lines, 1, Math.PI / 180, 2, 0, 0);
+// draw lines
+for (let i = 0; i < lines.rows; ++i) {
+    let startPoint = new cv.Point(lines.data32S[i * 4], lines.data32S[i * 4 + 1]);
+    let endPoint = new cv.Point(lines.data32S[i * 4 + 2], lines.data32S[i * 4 + 3]);
+    cv.line(dst, startPoint, endPoint, color);
+}
+cv.imshow('output2', dst);
+src.delete(); dst.delete(); lines.delete();
+
+}
+
+</script>
+</html>
